@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'screens/schedule_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -59,9 +60,9 @@ class _MainShellState extends State<MainShell> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildNavItem(Icons.calendar_today_rounded, 'Розклад', 0),
-              _buildNavItem(Icons.fitness_center_rounded, 'Тренінг', 1),
-              _buildNavItem(Icons.pie_chart_rounded, 'Їжа', 2),
+              _buildNavItem(Icons.calendar_today_rounded, 'Schedule', 0),
+              _buildNavItem(Icons.fitness_center_rounded, 'Workout', 1),
+              _buildNavItem(Icons.pie_chart_rounded, 'Food', 2),
             ],
           ),
         ),
@@ -105,12 +106,6 @@ class _MainShellState extends State<MainShell> {
       ),
     );
   }
-}
-
-class ScheduleScreen extends StatelessWidget {
-  const ScheduleScreen({super.key});
-  @override
-  Widget build(BuildContext context) => const Center(child: Text('Екран Розкладу', style: TextStyle(color: Colors.white)));
 }
 
 class WorkoutScreen extends StatelessWidget {
