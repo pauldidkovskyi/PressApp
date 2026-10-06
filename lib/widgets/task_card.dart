@@ -1,66 +1,69 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import '../models/schedule_item.dart';
 
-class TaskCard extends StatefulWidget {
+class TaskCard extends StatelessWidget {
   final TaskItem item;
   final VoidCallback onToggle;
-  final Function(String) onTitleChanged;
-  final VoidCallback onLongPress;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+  final VoidCallback onReschedule;
 
   const TaskCard({
     super.key,
     required this.item,
     required this.onToggle,
-    required this.onTitleChanged,
-    required this.onLongPress,
+    required this.onTap,
+    required this.onDelete,
+    required this.onReschedule,
   });
 
   @override
-  State<TaskCard> createState() => _TaskCardState();
-}
-
-class _TaskCardState extends State<TaskCard> {
-  late TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.item.title);
-  }
-
-  @override
-  void didUpdateWidget(covariant TaskCard oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.item.title != widget.item.title) {
-      _controller.text = widget.item.title;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onLongPress: widget.onLongPress,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        child: Row(
+    final completed = item.isCompleted;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Slidable(
+        key: ValueKey(item.id),
+        endActionPane: ActionPane(
+          motion: const BehindMotion(),
+          extentRatio: 0.45,
           children: [
-            Expanded(child: _buildTitleBlock()),
             const SizedBox(width: 8),
-            _buildCheckBlock(),
+            SlidableAction(
+              onPressed: (_) => onReschedule(),
+              backgroundColor: const Color(0xFFFF9F0A),
+              foregroundColor: Colors.white,
+              icon: Icons.calendar_today_rounded,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            const SizedBox(width: 8),
+            SlidableAction(
+              onPressed: (_) => onDelete(),
+              backgroundColor: const Color(0xFFFF453A),
+              foregroundColor: Colors.white,
+              icon: Icons.delete_outline_rounded,
+              borderRadius: BorderRadius.circular(16),
+            ),
           ],
+        ),
+        child: GestureDetector(
+          onTap: onTap,
+          behavior: HitTestBehavior.opaque,
+          child: Row(
+            children: [
+              Expanded(child: _buildTitleBlock(completed)),
+              const SizedBox(width: 8),
+              _buildCheckBlock(completed),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildTitleBlock() {
+  Widget _buildTitleBlock(bool completed) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
       height: 52,
@@ -69,41 +72,36 @@ class _TaskCardState extends State<TaskCard> {
         color: const Color(0xFF2E2C2C),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: TextField(
-        controller: _controller,
-        onChanged: widget.onTitleChanged,
+      child: Text(
+        item.title,
         style: TextStyle(
-          color: widget.item.isCompleted ? Colors.white.withOpacity(0.4) : Colors.white,
-          fontSize: 14,
+          color: completed ? Colors.white54 : Colors.white,
+          fontSize: 15,
           fontWeight: FontWeight.w500,
-          decoration: widget.item.isCompleted ? TextDecoration.lineThrough : null,
-          decorationColor: Colors.white.withOpacity(0.4),
+          decoration: completed ? TextDecoration.lineThrough : null,
+          decorationColor: Colors.white54,
         ),
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          isDense: true,
-          contentPadding: EdgeInsets.zero,
-        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
 
-  Widget _buildCheckBlock() {
-    final completed = widget.item.isCompleted;
+  Widget _buildCheckBlock(bool completed) {
     return GestureDetector(
-      onTap: widget.onToggle,
+      onTap: onToggle,
       behavior: HitTestBehavior.opaque,
       child: Container(
         width: 52,
         height: 52,
         decoration: BoxDecoration(
-          color: completed ? const Color(0xFF0A84FF) : const Color(0xFF2E2C2C),
+          color: completed ? const Color(0xFF32D74B) : const Color(0xFF2E2C2C),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Icon(
           Icons.check_rounded,
-          color: completed ? Colors.white : Colors.white.withOpacity(0.2),
-          size: 22,
+          color: completed ? Colors.white : Colors.white24,
+          size: 26,
         ),
       ),
     );

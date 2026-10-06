@@ -17,7 +17,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       title: 'Тренування: Спина / Біцепс',
       startTime: DateTime.now().subtract(const Duration(hours: 2)),
       endTime: DateTime.now().subtract(const Duration(hours: 1)),
-    ),
+    )..isCompleted = true, // Тепер статус виконано задаємо при створенні об'єкта
     EventItem(
       id: '2',
       title: 'Мітинг по системній інженерії',
@@ -50,7 +50,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 110),
         child: FloatingActionButton(
-          onPressed: () {},
+          onPressed: () {
+            // Пізніше тут буде виклик вікна створення події
+          },
           backgroundColor: const Color(0xFF0A84FF),
           elevation: 8,
           shape: RoundedRectangleBorder(
@@ -77,7 +79,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white.withOpacity(0.5)),
+          Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white.withValues(alpha: 0.5)),
         ],
       ),
     );
@@ -91,8 +93,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           key: ValueKey(event.id),
           item: event,
           onToggle: () => setState(() => event.isCompleted = !event.isCompleted),
-          onTitleChanged: (newTitle) => event.title = newTitle,
-          onLongPress: () {},
+          onTap: () {
+            // Крок 2: Тут ми будемо викликати панель деталей
+          },
+          onReschedule: () {
+            setState(() => _events.remove(event));
+          },
+          onDelete: () {
+            setState(() => _events.remove(event));
+          },
         )),
         const SizedBox(height: 24),
         const Text(
@@ -109,8 +118,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           key: ValueKey(task.id),
           item: task,
           onToggle: () => setState(() => task.isCompleted = !task.isCompleted),
-          onTitleChanged: (newTitle) => task.title = newTitle,
-          onLongPress: () {},
+          onTap: () {
+             // Крок 2: Тут ми будемо викликати панель деталей
+          },
+          onReschedule: () {
+            setState(() => _tasks.remove(task));
+          },
+          onDelete: () {
+            setState(() => _tasks.remove(task));
+          },
         )),
       ],
     );

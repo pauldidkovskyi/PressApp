@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'screens/schedule_screen.dart';
 
 void main() {
@@ -13,7 +14,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
+        brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color(0xFF1C1C1E),
+        fontFamily: GoogleFonts.nunito().fontFamily,
       ),
       home: const MainShell(),
     );
@@ -48,10 +51,10 @@ class _MainShellState extends State<MainShell> {
           decoration: BoxDecoration(
             color: const Color(0xFF2C2C2E),
             borderRadius: BorderRadius.circular(40),
-            border: Border.all(color: Colors.white.withOpacity(0.08), width: 1),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.4),
+                color: Colors.black.withValues(alpha: 0.4),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -108,6 +111,7 @@ class _MainShellState extends State<MainShell> {
   }
 }
 
+// Тимчасові екрани
 class WorkoutScreen extends StatelessWidget {
   const WorkoutScreen({super.key});
   @override
