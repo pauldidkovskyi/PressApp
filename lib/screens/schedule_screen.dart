@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+
 import '../models/schedule_item.dart';
 import '../widgets/event_card.dart';
 import '../widgets/task_card.dart';
+import '../widgets/item_detail_sheet.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -17,7 +19,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       title: 'Тренування: Спина / Біцепс',
       startTime: DateTime.now().subtract(const Duration(hours: 2)),
       endTime: DateTime.now().subtract(const Duration(hours: 1)),
-    )..isCompleted = true, // Тепер статус виконано задаємо при створенні об'єкта
+    )..isCompleted = true,
     EventItem(
       id: '2',
       title: 'Мітинг по системній інженерії',
@@ -40,9 +42,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(),
-            Expanded(
-              child: _buildList(),
-            ),
+            Expanded(child: _buildList()),
           ],
         ),
       ),
@@ -50,9 +50,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 110),
         child: FloatingActionButton(
-          onPressed: () {
-            // Пізніше тут буде виклик вікна створення події
-          },
+          onPressed: () {},
           backgroundColor: const Color(0xFF0A84FF),
           elevation: 8,
           shape: RoundedRectangleBorder(
@@ -79,7 +77,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          Icon(Icons.keyboard_arrow_down_rounded, color: Colors.white.withValues(alpha: 0.5)),
+          Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: Colors.white.withValues(alpha: 0.5),
+          ),
         ],
       ),
     );
@@ -89,20 +90,40 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     return ListView(
       padding: const EdgeInsets.only(left: 24, right: 24, bottom: 120),
       children: [
-        ..._events.map((event) => EventCard(
-          key: ValueKey(event.id),
-          item: event,
-          onToggle: () => setState(() => event.isCompleted = !event.isCompleted),
-          onTap: () {
-            // Крок 2: Тут ми будемо викликати панель деталей
-          },
-          onReschedule: () {
-            setState(() => _events.remove(event));
-          },
-          onDelete: () {
-            setState(() => _events.remove(event));
-          },
-        )),
+        ..._events.map(
+          (event) => EventCard(
+            key: ValueKey(event.id),
+            item: event,
+            onToggle: () =>
+                setState(() => event.isCompleted = !event.isCompleted),
+            onTap: () {
+              ItemDetailSheet.show(
+                context,
+                item: event,
+                onSave: (updatedItem) {
+                  setState(() {
+                    if (updatedItem is TaskItem) {
+                      // Якщо повернувся Task, видаляємо зі Schedule і кидаємо в Tasks
+                      _events.remove(event);
+                      _tasks.add(updatedItem);
+                    } else {
+                      // Інакше просто пересортовуємо події
+                      _events.sort(
+                        (a, b) => a.startTime.compareTo(b.startTime),
+                      );
+                    }
+                  });
+                },
+              );
+            },
+            onReschedule: () {
+              setState(() => _events.remove(event));
+            },
+            onDelete: () {
+              setState(() => _events.remove(event));
+            },
+          ),
+        ),
         const SizedBox(height: 24),
         const Text(
           'Tasks',
@@ -114,20 +135,37 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        ..._tasks.map((task) => TaskCard(
-          key: ValueKey(task.id),
-          item: task,
-          onToggle: () => setState(() => task.isCompleted = !task.isCompleted),
-          onTap: () {
-             // Крок 2: Тут ми будемо викликати панель деталей
-          },
-          onReschedule: () {
-            setState(() => _tasks.remove(task));
-          },
-          onDelete: () {
-            setState(() => _tasks.remove(task));
-          },
-        )),
+        ..._tasks.map(
+          (task) => TaskCard(
+            key: ValueKey(task.id),
+            item: task,
+            onToggle: () =>
+                setState(() => task.isCompleted = !task.isCompleted),
+            onTap: () {
+              ItemDetailSheet.show(
+                context,
+                item: task,
+                onSave: (updatedItem) {
+                  setState(() {
+                    if (updatedItem is EventItem) {
+                      _tasks.remove(task);
+                      _events.add(updatedItem);
+                      _events.sort(
+                        (a, b) => a.startTime.compareTo(b.startTime),
+                      );
+                    }
+                  });
+                },
+              );
+            },
+            onReschedule: () {
+              setState(() => _tasks.remove(task));
+            },
+            onDelete: () {
+              setState(() => _tasks.remove(task));
+            },
+          ),
+        ),
       ],
     );
   }
