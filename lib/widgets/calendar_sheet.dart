@@ -10,7 +10,11 @@ class CalendarSheet extends StatefulWidget {
     required this.onDateSelected,
   });
 
-  static void show(BuildContext context, {required DateTime initialDate, required Function(DateTime) onDateSelected}) {
+  static void show(
+    BuildContext context, {
+    required DateTime initialDate,
+    required Function(DateTime) onDateSelected,
+  }) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -30,8 +34,19 @@ class _CalendarSheetState extends State<CalendarSheet> {
   late DateTime _selectedDate;
 
   final List<String> _months = [
-    '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    '',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 
   @override
@@ -43,16 +58,25 @@ class _CalendarSheetState extends State<CalendarSheet> {
 
   void _changeMonth(int offset) {
     setState(() {
-      _displayedMonth = DateTime(_displayedMonth.year, _displayedMonth.month + offset, 1);
+      _displayedMonth = DateTime(
+        _displayedMonth.year,
+        _displayedMonth.month + offset,
+        1,
+      );
     });
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final isCurrentMonth =
+        _displayedMonth.year == now.year && _displayedMonth.month == now.month;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: const BoxDecoration(
-        color: Color(0xFF2C2C2E), 
+        color: Color(0xFF2C2C2E),
         borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
       ),
       child: Column(
@@ -63,9 +87,11 @@ class _CalendarSheetState extends State<CalendarSheet> {
             children: [
               Text(
                 '${_months[_displayedMonth.month]} ${_displayedMonth.year}',
-                style: const TextStyle(
-                  color: Color(0xFFFF453A),
-                  fontSize: 28, 
+                style: TextStyle(
+                  color: isCurrentMonth
+                      ? const Color(0xFF0A84FF) //0xFF0A84FF red 0xFFFF453A
+                      : Colors.white,
+                  fontSize: 28,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.5,
                 ),
@@ -74,14 +100,20 @@ class _CalendarSheetState extends State<CalendarSheet> {
                 children: [
                   IconButton(
                     onPressed: () => _changeMonth(-1),
-                    icon: const Icon(Icons.chevron_left_rounded, color: Colors.white),
+                    icon: const Icon(
+                      Icons.chevron_left_rounded,
+                      color: Colors.white,
+                    ),
                   ),
                   IconButton(
                     onPressed: () => _changeMonth(1),
-                    icon: const Icon(Icons.chevron_right_rounded, color: Colors.white),
+                    icon: const Icon(
+                      Icons.chevron_right_rounded,
+                      color: Colors.white,
+                    ),
                   ),
                 ],
-              )
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -93,8 +125,12 @@ class _CalendarSheetState extends State<CalendarSheet> {
   }
 
   Widget _buildGrid() {
-    int daysInMonth = DateTime(_displayedMonth.year, _displayedMonth.month + 1, 0).day;
-    int firstWeekday = _displayedMonth.weekday; 
+    int daysInMonth = DateTime(
+      _displayedMonth.year,
+      _displayedMonth.month + 1,
+      0,
+    ).day;
+    int firstWeekday = _displayedMonth.weekday;
     final now = DateTime.now();
 
     return GridView.builder(
@@ -108,19 +144,25 @@ class _CalendarSheetState extends State<CalendarSheet> {
       itemCount: daysInMonth + firstWeekday - 1,
       itemBuilder: (context, index) {
         if (index < firstWeekday - 1) {
-          return const SizedBox(); 
+          return const SizedBox();
         }
 
         int day = index - (firstWeekday - 1) + 1;
-        DateTime cellDate = DateTime(_displayedMonth.year, _displayedMonth.month, day);
-        
-        bool isSelected = _selectedDate.year == cellDate.year &&
-                          _selectedDate.month == cellDate.month &&
-                          _selectedDate.day == cellDate.day;
-                          
-        bool isToday = now.year == cellDate.year && 
-                       now.month == cellDate.month && 
-                       now.day == cellDate.day;
+        DateTime cellDate = DateTime(
+          _displayedMonth.year,
+          _displayedMonth.month,
+          day,
+        );
+
+        bool isSelected =
+            _selectedDate.year == cellDate.year &&
+            _selectedDate.month == cellDate.month &&
+            _selectedDate.day == cellDate.day;
+
+        bool isToday =
+            now.year == cellDate.year &&
+            now.month == cellDate.month &&
+            now.day == cellDate.day;
 
         int weekday = (index % 7) + 1;
         bool isWeekend = weekday == 6 || weekday == 7;
@@ -138,15 +180,15 @@ class _CalendarSheetState extends State<CalendarSheet> {
           onTap: () {
             setState(() => _selectedDate = cellDate);
             widget.onDateSelected(cellDate);
-            Navigator.pop(context); 
+            Navigator.pop(context);
           },
           behavior: HitTestBehavior.opaque,
           child: Container(
             decoration: BoxDecoration(
               color: isSelected ? const Color(0xFF0A84FF) : Colors.transparent,
               shape: BoxShape.circle,
-              border: isToday && !isSelected 
-                  ? Border.all(color: Colors.white30, width: 1.5) 
+              border: isToday && !isSelected
+                  ? Border.all(color: Colors.white30, width: 1.5)
                   : null,
             ),
             alignment: Alignment.center,
