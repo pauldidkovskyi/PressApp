@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
+
 import '../models/schedule_item.dart';
 
 class ItemDetailSheet extends StatefulWidget {
   final ScheduleItem item;
   final Function(ScheduleItem) onSave;
 
-  const ItemDetailSheet({
-    super.key,
-    required this.item,
-    required this.onSave,
-  });
+  const ItemDetailSheet({super.key, required this.item, required this.onSave});
 
-  static void show(BuildContext context, {required ScheduleItem item, required Function(ScheduleItem) onSave}) {
+  static void show(
+    BuildContext context, {
+    required ScheduleItem item,
+    required Function(ScheduleItem) onSave,
+  }) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -39,8 +40,11 @@ class _ItemDetailSheetState extends State<ItemDetailSheet> {
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.item.title);
-    _descController = TextEditingController();
-    
+    // Підтягуємо існуючий опис, якщо він є
+    _descController = TextEditingController(
+      text: widget.item.description ?? '',
+    );
+
     if (widget.item is EventItem) {
       _startTime = (widget.item as EventItem).startTime;
       _endTime = (widget.item as EventItem).endTime;
@@ -59,38 +63,72 @@ class _ItemDetailSheetState extends State<ItemDetailSheet> {
   }
 
   Future<void> _pickTime() async {
-    final picked = await showTimePicker(
+    final startPicked = await showTimePicker(
       context: context,
-      initialTime: _startTime != null 
-          ? TimeOfDay.fromDateTime(_startTime!) 
+      initialTime: _startTime != null
+          ? TimeOfDay.fromDateTime(_startTime!)
           : TimeOfDay.now(),
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.dark().copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF0A84FF),
-              surface: Color(0xFF2C2C2E),
-            ),
-          ),
-          child: child!,
-        );
-      },
+      helpText: 'SELECT START TIME',
+      builder: _pickerTheme,
     );
 
-    if (picked != null) {
-      final now = DateTime.now();
-      setState(() {
-        _startTime = DateTime(now.year, now.month, now.day, picked.hour, picked.minute);
-        _endTime = _startTime!.add(const Duration(hours: 1));
-      });
+    if (startPicked != null) {
+      // ignore: use_build_context_synchronously
+      final endPicked = await showTimePicker(
+        context: context,
+        initialTime: _endTime != null
+            ? TimeOfDay.fromDateTime(_endTime!)
+            : TimeOfDay(
+                hour: (startPicked.hour + 1) % 24,
+                minute: startPicked.minute,
+              ),
+        helpText: 'SELECT END TIME',
+        builder: _pickerTheme,
+      );
+
+      if (endPicked != null) {
+        final now = DateTime.now();
+        setState(() {
+          _startTime = DateTime(
+            now.year,
+            now.month,
+            now.day,
+            startPicked.hour,
+            startPicked.minute,
+          );
+          _endTime = DateTime(
+            now.year,
+            now.month,
+            now.day,
+            endPicked.hour,
+            endPicked.minute,
+          );
+
+          if (_endTime!.isBefore(_startTime!)) {
+            _endTime = _endTime!.add(const Duration(days: 1));
+          }
+        });
+      }
     }
+  }
+
+  Widget _pickerTheme(BuildContext context, Widget? child) {
+    return Theme(
+      data: ThemeData.dark().copyWith(
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFF0A84FF),
+          surface: Color(0xFF2C2C2E),
+        ),
+      ),
+      child: child!,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final hasTime = _startTime != null && _endTime != null;
-    final timeText = hasTime 
-        ? '${_formatTime(_startTime!)} - ${_formatTime(_endTime!)}' 
+    final timeText = hasTime
+        ? '${_formatTime(_startTime!)} - ${_formatTime(_endTime!)}'
         : 'Add Time';
 
     return Container(
@@ -120,27 +158,31 @@ class _ItemDetailSheetState extends State<ItemDetailSheet> {
           ),
           const SizedBox(height: 24),
 
-          // Блок часу з новим хрестиком
           _buildActionRow(
             icon: Icons.access_time_rounded,
             title: timeText,
             color: hasTime ? Colors.white : const Color(0xFF0A84FF),
             onTap: _pickTime,
-            // Додаємо кнопку очищення, якщо час встановлено
-            trailing: hasTime ? GestureDetector(
-              onTap: () => setState(() {
-                _startTime = null;
-                _endTime = null;
-              }),
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.close_rounded, color: Colors.white70, size: 16),
-              ),
-            ) : null,
+            trailing: hasTime
+                ? GestureDetector(
+                    onTap: () => setState(() {
+                      _startTime = null;
+                      _endTime = null;
+                    }),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white70,
+                        size: 16,
+                      ),
+                    ),
+                  )
+                : null,
           ),
           const SizedBox(height: 16),
 
@@ -193,45 +235,49 @@ class _ItemDetailSheetState extends State<ItemDetailSheet> {
   }
 
   void _saveItem() {
-    final title = _titleController.text.trim().isEmpty ? 'Untitled' : _titleController.text;
+    final title = _titleController.text.trim().isEmpty
+        ? 'Untitled'
+        : _titleController.text;
+    final desc = _descController.text.trim().isEmpty
+        ? null
+        : _descController.text.trim();
 
     if (widget.item is TaskItem && _startTime != null && _endTime != null) {
-      // Task -> Event (додали час)
       final newEvent = EventItem(
         id: widget.item.id,
         title: title,
+        description: desc,
         startTime: _startTime!,
         endTime: _endTime!,
       )..isCompleted = widget.item.isCompleted;
       widget.onSave(newEvent);
-
     } else if (widget.item is EventItem && _startTime == null) {
-      // МАГІЯ НАВПАКИ: Event -> Task (прибрали час)
       final newTask = TaskItem(
         id: widget.item.id,
         title: title,
+        description: desc,
+        date: (widget.item as EventItem).startTime,
       )..isCompleted = widget.item.isCompleted;
       widget.onSave(newTask);
-
     } else {
-      // Звичайне оновлення (без зміни типу)
       widget.item.title = title;
+      widget.item.description = desc;
       if (widget.item is EventItem && _startTime != null) {
         (widget.item as EventItem).startTime = _startTime!;
         (widget.item as EventItem).endTime = _endTime!;
       }
       widget.onSave(widget.item);
     }
-    
+
     Navigator.pop(context);
   }
 
   Widget _buildActionRow({
-    required IconData icon, 
-    required String title, 
+    required IconData icon,
+    required String title,
     required Color color,
     required VoidCallback onTap,
-    Widget? trailing, // Додали параметр для елемента справа
+    Widget? trailing,
   }) {
     return Material(
       color: Colors.transparent,
@@ -248,7 +294,6 @@ class _ItemDetailSheetState extends State<ItemDetailSheet> {
             children: [
               Icon(icon, color: color, size: 22),
               const SizedBox(width: 12),
-              // Expanded розтягує текст, щоб trailing завжди був скраю
               Expanded(
                 child: Text(
                   title,
