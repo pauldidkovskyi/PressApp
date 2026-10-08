@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import '../models/schedule_item.dart';
 import '../widgets/event_card.dart';
@@ -16,38 +17,34 @@ class ScheduleScreen extends StatefulWidget {
 class _ScheduleScreenState extends State<ScheduleScreen> {
   DateTime _selectedDate = DateTime.now();
 
-  // ГЛОБАЛЬНІ СПИСКИ (База даних)
-  late final List<EventItem> _allEvents;
-  late final List<TaskItem> _allTasks;
+  late List<EventItem> _allEvents;
+  late List<TaskItem> _allTasks;
+
+  final _eventsBox = Hive.box<EventItem>('events');
+  final _tasksBox = Hive.box<TaskItem>('tasks');
 
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
 
-    // Оновлені тестові дані з обов'язковим параметром дати
-    _allEvents = [
-      EventItem(
-        id: '1',
-        title: 'Тренування: Спина / Біцепс',
-        startTime: now.subtract(const Duration(hours: 2)),
-        endTime: now.subtract(const Duration(hours: 1)),
-      )..isCompleted = true,
-      EventItem(
-        id: '2',
-        title: 'Мітинг по системній інженерії',
-        startTime: now.add(const Duration(hours: 1)),
-        endTime: now.add(const Duration(hours: 2)),
-      ),
-    ];
+    _allEvents = _eventsBox.values.toList();
+    _allEvents.sort((a, b) => a.startTime.compareTo(b.startTime));
 
-    _allTasks = [
-      TaskItem(id: 't1', title: 'Випити 2л води', date: now),
-      TaskItem(id: 't2', title: 'Зробити вакуум живота', date: now),
-    ];
+    _allTasks = _tasksBox.values.toList();
   }
 
-  // ДИНАМІЧНІ СПИСКИ (Фільтруються для поточного обраного дня)
+  void _saveData() {
+    _eventsBox.clear();
+    for (var e in _allEvents) {
+      _eventsBox.put(e.id, e);
+    }
+
+    _tasksBox.clear();
+    for (var t in _allTasks) {
+      _tasksBox.put(t.id, t);
+    }
+  }
+
   List<EventItem> get _currentEvents => _allEvents
       .where(
         (e) =>
@@ -66,7 +63,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       )
       .toList();
 
-  // МЕНЮ ПЕРЕНЕСЕННЯ (Reschedule)
   void _showRescheduleOptions(ScheduleItem item) {
     showModalBottomSheet(
       context: context,
@@ -138,6 +134,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         );
         item.endTime = item.startTime.add(duration);
       }
+      _saveData();
     });
   }
 
@@ -232,6 +229,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   } else if (savedItem is TaskItem) {
                     _allTasks.add(savedItem);
                   }
+                  _saveData();
                 });
               },
             );
@@ -327,8 +325,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           (event) => EventCard(
             key: ValueKey(event.id),
             item: event,
-            onToggle: () =>
-                setState(() => event.isCompleted = !event.isCompleted),
+            onToggle: () {
+              setState(() => event.isCompleted = !event.isCompleted);
+              _saveData();
+            },
             onTap: () {
               ItemDetailSheet.show(
                 context,
@@ -342,12 +342,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     _allEvents.sort(
                       (a, b) => a.startTime.compareTo(b.startTime),
                     );
+                    _saveData();
                   });
                 },
               );
             },
             onReschedule: () => _showRescheduleOptions(event),
-            onDelete: () => setState(() => _allEvents.remove(event)),
+            onDelete: () {
+              setState(() => _allEvents.remove(event));
+              _saveData();
+            },
           ),
         ),
 
@@ -392,6 +396,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 );
 
                 _allTasks.addAll(currentDayTasks);
+                _saveData();
               });
             },
             children: tasks
@@ -399,8 +404,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   (task) => TaskCard(
                     key: ValueKey(task.id),
                     item: task,
-                    onToggle: () =>
-                        setState(() => task.isCompleted = !task.isCompleted),
+                    onToggle: () {
+                      setState(() => task.isCompleted = !task.isCompleted);
+                      _saveData();
+                    },
                     onTap: () {
                       ItemDetailSheet.show(
                         context,
@@ -414,12 +421,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                 (a, b) => a.startTime.compareTo(b.startTime),
                               );
                             }
+                            _saveData();
                           });
                         },
                       );
                     },
                     onReschedule: () => _showRescheduleOptions(task),
-                    onDelete: () => setState(() => _allTasks.remove(task)),
+                    onDelete: () {
+                      setState(() => _allTasks.remove(task));
+                      _saveData();
+                    },
                   ),
                 )
                 .toList(),

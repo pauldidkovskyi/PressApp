@@ -1,8 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'screens/schedule_screen.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
-void main() {
+import 'screens/schedule_screen.dart';
+import 'models/schedule_item.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Hive.initFlutter();
+
+  Hive.registerAdapter(EventItemAdapter());
+  Hive.registerAdapter(TaskItemAdapter());
+
+  await Hive.openBox<EventItem>('events');
+  await Hive.openBox<TaskItem>('tasks');
+
   runApp(const MyApp());
 }
 
@@ -51,7 +64,10 @@ class _MainShellState extends State<MainShell> {
           decoration: BoxDecoration(
             color: const Color(0xFF2C2C2E),
             borderRadius: BorderRadius.circular(40),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.08), width: 1),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.08),
+              width: 1,
+            ),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.4),
@@ -103,7 +119,7 @@ class _MainShellState extends State<MainShell> {
                   fontSize: 14,
                 ),
               ),
-            ]
+            ],
           ],
         ),
       ),
@@ -115,11 +131,15 @@ class _MainShellState extends State<MainShell> {
 class WorkoutScreen extends StatelessWidget {
   const WorkoutScreen({super.key});
   @override
-  Widget build(BuildContext context) => const Center(child: Text('Екран Тренувань', style: TextStyle(color: Colors.white)));
+  Widget build(BuildContext context) => const Center(
+    child: Text('Екран Тренувань', style: TextStyle(color: Colors.white)),
+  );
 }
 
 class FoodScreen extends StatelessWidget {
   const FoodScreen({super.key});
   @override
-  Widget build(BuildContext context) => const Center(child: Text('Екран Харчування', style: TextStyle(color: Colors.white)));
+  Widget build(BuildContext context) => const Center(
+    child: Text('Екран Харчування', style: TextStyle(color: Colors.white)),
+  );
 }

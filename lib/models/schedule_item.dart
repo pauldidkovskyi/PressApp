@@ -1,7 +1,18 @@
+import 'package:hive/hive.dart';
+
+part 'schedule_item.g.dart'; 
+
 abstract class ScheduleItem {
+  @HiveField(0)
   String id;
+  
+  @HiveField(1)
   String title;
+  
+  @HiveField(2)
   String? description;
+  
+  @HiveField(3)
   bool isCompleted;
 
   ScheduleItem({
@@ -12,8 +23,12 @@ abstract class ScheduleItem {
   });
 }
 
+@HiveType(typeId: 0)
 class EventItem extends ScheduleItem {
+  @HiveField(4)
   DateTime startTime;
+  
+  @HiveField(5)
   DateTime endTime;
 
   EventItem({
@@ -26,8 +41,11 @@ class EventItem extends ScheduleItem {
   });
 }
 
+@HiveType(typeId: 1)
 class TaskItem extends ScheduleItem {
+  @HiveField(4) 
   DateTime date;
+
   TaskItem({
     required super.id,
     required super.title,
