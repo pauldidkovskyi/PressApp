@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 
 import '../models/schedule_item.dart';
 
@@ -35,12 +36,13 @@ class _ItemDetailSheetState extends State<ItemDetailSheet> {
   late TextEditingController _descController;
   DateTime? _startTime;
   DateTime? _endTime;
+  int? _reminderMinutes;
+  DateTime? _reminderTime;
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.item.title);
-    // Підтягуємо існуючий опис, якщо він є
     _descController = TextEditingController(
       text: widget.item.description ?? '',
     );
@@ -48,6 +50,9 @@ class _ItemDetailSheetState extends State<ItemDetailSheet> {
     if (widget.item is EventItem) {
       _startTime = (widget.item as EventItem).startTime;
       _endTime = (widget.item as EventItem).endTime;
+      _reminderMinutes = (widget.item as EventItem).reminderMinutes;
+    } else if (widget.item is TaskItem) {
+      _reminderTime = (widget.item as TaskItem).reminderTime;
     }
   }
 
@@ -62,66 +67,235 @@ class _ItemDetailSheetState extends State<ItemDetailSheet> {
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
-  Future<void> _pickTime() async {
-    final startPicked = await showTimePicker(
+  Future<DateTime?> _showCenteredTimePicker({
+    required DateTime initialTime,
+    required String title,
+    required String buttonText,
+  }) {
+    DateTime tempTime = initialTime;
+    return showDialog<DateTime>(
       context: context,
-      initialTime: _startTime != null
-          ? TimeOfDay.fromDateTime(_startTime!)
-          : TimeOfDay.now(),
-      helpText: 'SELECT START TIME',
-      builder: _pickerTheme,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: const Color(0xFF2C2C2E),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                //(SELECT START TIME / END TIME)
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white54,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Збільшений барабан
+                SizedBox(
+                  height: 200,
+                  child: Transform.scale(
+                    scale: 1.25, // Збільшуємо цифри і коліщатка на 25%
+                    child: CupertinoTheme(
+                      data: const CupertinoThemeData(
+                        brightness: Brightness.dark, // Робимо текст білим
+                      ),
+                      child: CupertinoDatePicker(
+                        mode: CupertinoDatePickerMode.time,
+                        use24hFormat: true,
+                        initialDateTime: initialTime,
+                        onDateTimeChanged: (newTime) => tempTime = newTime,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Кнопка підтвердження
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context, tempTime),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0A84FF),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                    child: Text(
+                      buttonText,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _pickTime() async {
+    final now = DateTime.now();
+    DateTime startTemp =
+        _startTime ??
+        DateTime(now.year, now.month, now.day, now.hour, now.minute);
+
+    final pickedStart = await _showCenteredTimePicker(
+      initialTime: startTemp,
+      title: 'SELECT START TIME',
+      buttonText: 'Next',
     );
 
-    if (startPicked != null) {
-      // ignore: use_build_context_synchronously
-      final endPicked = await showTimePicker(
-        context: context,
-        initialTime: _endTime != null
-            ? TimeOfDay.fromDateTime(_endTime!)
-            : TimeOfDay(
-                hour: (startPicked.hour + 1) % 24,
-                minute: startPicked.minute,
-              ),
-        helpText: 'SELECT END TIME',
-        builder: _pickerTheme,
-      );
+    if (pickedStart == null || !mounted) return;
 
-      if (endPicked != null) {
-        final now = DateTime.now();
-        setState(() {
-          _startTime = DateTime(
-            now.year,
-            now.month,
-            now.day,
-            startPicked.hour,
-            startPicked.minute,
-          );
-          _endTime = DateTime(
-            now.year,
-            now.month,
-            now.day,
-            endPicked.hour,
-            endPicked.minute,
-          );
+    DateTime endTemp = _endTime ?? pickedStart.add(const Duration(hours: 1));
+    if (endTemp.isBefore(pickedStart)) {
+      endTemp = pickedStart.add(const Duration(hours: 1));
+    }
 
-          if (_endTime!.isBefore(_startTime!)) {
-            _endTime = _endTime!.add(const Duration(days: 1));
-          }
-        });
+    final pickedEnd = await _showCenteredTimePicker(
+      initialTime: endTemp,
+      title: 'SELECT END TIME',
+      buttonText: 'Done',
+    );
+
+    if (pickedEnd == null || !mounted) return;
+
+    setState(() {
+      _startTime = pickedStart;
+      _endTime = pickedEnd;
+      if (_endTime!.isBefore(_startTime!)) {
+        _endTime = _endTime!.add(const Duration(days: 1));
       }
+      _reminderTime = null;
+    });
+  }
+
+  Future<void> _pickTaskReminderTime() async {
+    final baseDate = widget.item is TaskItem
+        ? (widget.item as TaskItem).date
+        : DateTime.now();
+    DateTime tempTime =
+        _reminderTime ??
+        DateTime(baseDate.year, baseDate.month, baseDate.day, 9, 0);
+
+    final picked = await _showCenteredTimePicker(
+      initialTime: tempTime,
+      title: 'SET REMINDER TIME',
+      buttonText: 'Done',
+    );
+
+    if (picked != null && mounted) {
+      setState(() {
+        _reminderTime = DateTime(
+          baseDate.year,
+          baseDate.month,
+          baseDate.day,
+          picked.hour,
+          picked.minute,
+        );
+      });
     }
   }
 
-  Widget _pickerTheme(BuildContext context, Widget? child) {
-    return Theme(
-      data: ThemeData.dark().copyWith(
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF0A84FF),
-          surface: Color(0xFF2C2C2E),
+  void _handleReminderTap() {
+    if (_startTime != null && _endTime != null) {
+      _showEventReminderOptions();
+    } else {
+      _pickTaskReminderTime();
+    }
+  }
+
+  void _showEventReminderOptions() {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) => CupertinoActionSheet(
+        title: const Text('Remind me'),
+        actions: <CupertinoActionSheetAction>[
+          CupertinoActionSheetAction(
+            onPressed: () {
+              setState(() => _reminderMinutes = null);
+              Navigator.pop(context);
+            },
+            child: const Text('None', style: TextStyle(color: Colors.white)),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              setState(() => _reminderMinutes = 0);
+              Navigator.pop(context);
+            },
+            child: const Text(
+              'At event time',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              setState(() => _reminderMinutes = 5);
+              Navigator.pop(context);
+            },
+            child: const Text(
+              '5 minutes before',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              setState(() => _reminderMinutes = 15);
+              Navigator.pop(context);
+            },
+            child: const Text(
+              '15 minutes before',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              setState(() => _reminderMinutes = 30);
+              Navigator.pop(context);
+            },
+            child: const Text(
+              '30 minutes before',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          isDefaultAction: true,
+          onPressed: () => Navigator.pop(context),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: CupertinoColors.activeBlue),
+          ),
         ),
       ),
-      child: child!,
     );
+  }
+
+  String _getReminderText() {
+    if (_startTime != null && _endTime != null) {
+      if (_reminderMinutes == null) return 'Remind me';
+      if (_reminderMinutes == 0) return 'At event time';
+      return '$_reminderMinutes minutes before';
+    } else {
+      if (_reminderTime == null) return 'Remind me';
+      return _formatTime(_reminderTime!);
+    }
   }
 
   @override
@@ -157,7 +331,6 @@ class _ItemDetailSheetState extends State<ItemDetailSheet> {
             ),
           ),
           const SizedBox(height: 24),
-
           _buildActionRow(
             icon: Icons.access_time_rounded,
             title: timeText,
@@ -168,6 +341,36 @@ class _ItemDetailSheetState extends State<ItemDetailSheet> {
                     onTap: () => setState(() {
                       _startTime = null;
                       _endTime = null;
+                      _reminderMinutes = null;
+                    }),
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close_rounded,
+                        color: Colors.white70,
+                        size: 16,
+                      ),
+                    ),
+                  )
+                : null,
+          ),
+          const SizedBox(height: 12),
+          _buildActionRow(
+            icon: CupertinoIcons.bell_fill,
+            title: _getReminderText(),
+            color: (_reminderMinutes != null || _reminderTime != null)
+                ? Colors.white
+                : const Color(0xFF8E8E93),
+            onTap: _handleReminderTap,
+            trailing: (_reminderMinutes != null || _reminderTime != null)
+                ? GestureDetector(
+                    onTap: () => setState(() {
+                      _reminderMinutes = null;
+                      _reminderTime = null;
                     }),
                     child: Container(
                       padding: const EdgeInsets.all(4),
@@ -185,7 +388,6 @@ class _ItemDetailSheetState extends State<ItemDetailSheet> {
                 : null,
           ),
           const SizedBox(height: 16),
-
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -206,7 +408,6 @@ class _ItemDetailSheetState extends State<ItemDetailSheet> {
             ),
           ),
           const SizedBox(height: 32),
-
           SizedBox(
             width: double.infinity,
             height: 56,
@@ -249,6 +450,7 @@ class _ItemDetailSheetState extends State<ItemDetailSheet> {
         description: desc,
         startTime: _startTime!,
         endTime: _endTime!,
+        reminderMinutes: _reminderMinutes,
       )..isCompleted = widget.item.isCompleted;
       widget.onSave(newEvent);
     } else if (widget.item is EventItem && _startTime == null) {
@@ -257,6 +459,7 @@ class _ItemDetailSheetState extends State<ItemDetailSheet> {
         title: title,
         description: desc,
         date: (widget.item as EventItem).startTime,
+        reminderTime: _reminderTime,
       )..isCompleted = widget.item.isCompleted;
       widget.onSave(newTask);
     } else {
@@ -265,10 +468,12 @@ class _ItemDetailSheetState extends State<ItemDetailSheet> {
       if (widget.item is EventItem && _startTime != null) {
         (widget.item as EventItem).startTime = _startTime!;
         (widget.item as EventItem).endTime = _endTime!;
+        (widget.item as EventItem).reminderMinutes = _reminderMinutes;
+      } else if (widget.item is TaskItem) {
+        (widget.item as TaskItem).reminderTime = _reminderTime;
       }
       widget.onSave(widget.item);
     }
-
     Navigator.pop(context);
   }
 

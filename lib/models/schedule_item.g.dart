@@ -23,17 +23,20 @@ class EventItemAdapter extends TypeAdapter<EventItem> {
       isCompleted: fields[3] as bool,
       startTime: fields[4] as DateTime,
       endTime: fields[5] as DateTime,
+      reminderMinutes: fields[6] as int?,
     );
   }
 
   @override
   void write(BinaryWriter writer, EventItem obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(4)
       ..write(obj.startTime)
       ..writeByte(5)
       ..write(obj.endTime)
+      ..writeByte(6)
+      ..write(obj.reminderMinutes)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -71,15 +74,18 @@ class TaskItemAdapter extends TypeAdapter<TaskItem> {
       date: fields[4] as DateTime,
       description: fields[2] as String?,
       isCompleted: fields[3] as bool,
+      reminderTime: fields[5] as DateTime?,
     );
   }
 
   @override
   void write(BinaryWriter writer, TaskItem obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(4)
       ..write(obj.date)
+      ..writeByte(5)
+      ..write(obj.reminderTime)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)

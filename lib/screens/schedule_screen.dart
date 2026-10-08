@@ -6,6 +6,7 @@ import '../widgets/event_card.dart';
 import '../widgets/task_card.dart';
 import '../widgets/item_detail_sheet.dart';
 import '../widgets/calendar_sheet.dart';
+import '../services/notification_service.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -43,6 +44,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     for (var t in _allTasks) {
       _tasksBox.put(t.id, t);
     }
+    NotificationService().syncNotifications(_allEvents, _allTasks);
   }
 
   List<EventItem> get _currentEvents => _allEvents
@@ -378,11 +380,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     child: child,
                   );
                 },
-            onReorder: (oldIndex, newIndex) {
+            onReorderItem: (oldIndex, newIndex) {
               setState(() {
-                if (newIndex > oldIndex) {
-                  newIndex -= 1;
-                }
                 final currentDayTasks = _currentTasks.toList();
 
                 final item = currentDayTasks.removeAt(oldIndex);

@@ -4,17 +4,19 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'screens/schedule_screen.dart';
 import 'models/schedule_item.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Hive.initFlutter();
-
   Hive.registerAdapter(EventItemAdapter());
   Hive.registerAdapter(TaskItemAdapter());
 
   await Hive.openBox<EventItem>('events');
   await Hive.openBox<TaskItem>('tasks');
+
+  await NotificationService().init();
 
   runApp(const MyApp());
 }
