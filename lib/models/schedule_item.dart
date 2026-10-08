@@ -1,12 +1,16 @@
 import 'package:hive/hive.dart';
 
-part 'schedule_item.g.dart'; 
+part 'schedule_item.g.dart';
 
 abstract class ScheduleItem {
-  @HiveField(0) String id;
-  @HiveField(1) String title;
-  @HiveField(2) String? description;
-  @HiveField(3) bool isCompleted;
+  @HiveField(0)
+  String id;
+  @HiveField(1)
+  String title;
+  @HiveField(2)
+  String? description;
+  @HiveField(3)
+  bool isCompleted;
 
   ScheduleItem({
     required this.id,
@@ -18,9 +22,17 @@ abstract class ScheduleItem {
 
 @HiveType(typeId: 0)
 class EventItem extends ScheduleItem {
-  @HiveField(4) DateTime startTime;
-  @HiveField(5) DateTime endTime;
-  @HiveField(6) int? reminderMinutes; 
+  @HiveField(4)
+  DateTime startTime;
+  @HiveField(5)
+  DateTime endTime;
+  @HiveField(6)
+  int? reminderMinutes;
+  @HiveField(7)
+  String? category;
+  @HiveField(8)
+  int? categoryColor;
+
   EventItem({
     required super.id,
     required super.title,
@@ -29,13 +41,21 @@ class EventItem extends ScheduleItem {
     required this.startTime,
     required this.endTime,
     this.reminderMinutes,
+    this.category,
+    this.categoryColor,
   });
 }
 
 @HiveType(typeId: 1)
 class TaskItem extends ScheduleItem {
-  @HiveField(4) DateTime date;
-  @HiveField(5) DateTime? reminderTime; 
+  @HiveField(4)
+  DateTime date;
+  @HiveField(5)
+  DateTime? reminderTime;
+  @HiveField(6)
+  String? category;
+  @HiveField(7)
+  int? categoryColor;
 
   TaskItem({
     required super.id,
@@ -44,5 +64,7 @@ class TaskItem extends ScheduleItem {
     super.description,
     super.isCompleted,
     this.reminderTime,
+    this.category,
+    this.categoryColor,
   });
 }

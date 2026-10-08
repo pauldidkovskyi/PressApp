@@ -58,7 +58,7 @@ class _MainShellState extends State<MainShell> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
-      body: _screens[_currentIndex],
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: SafeArea(
         child: Container(
           margin: const EdgeInsets.only(left: 24, right: 24, bottom: 24),
@@ -129,7 +129,6 @@ class _MainShellState extends State<MainShell> {
   }
 }
 
-// Тимчасові екрани
 class WorkoutScreen extends StatelessWidget {
   const WorkoutScreen({super.key});
   @override

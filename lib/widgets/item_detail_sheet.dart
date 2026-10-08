@@ -3,6 +3,8 @@ import 'package:flutter/cupertino.dart';
 
 import '../models/schedule_item.dart';
 
+import 'package:flutter/services.dart';
+
 class ItemDetailSheet extends StatefulWidget {
   final ScheduleItem item;
   final Function(ScheduleItem) onSave;
@@ -98,20 +100,22 @@ class _ItemDetailSheetState extends State<ItemDetailSheet> {
                 ),
                 const SizedBox(height: 24),
 
-                // Збільшений барабан
                 SizedBox(
                   height: 200,
                   child: Transform.scale(
-                    scale: 1.25, // Збільшуємо цифри і коліщатка на 25%
+                    scale: 1.25, // +25%
                     child: CupertinoTheme(
                       data: const CupertinoThemeData(
-                        brightness: Brightness.dark, // Робимо текст білим
+                        brightness: Brightness.dark,
                       ),
                       child: CupertinoDatePicker(
                         mode: CupertinoDatePickerMode.time,
                         use24hFormat: true,
                         initialDateTime: initialTime,
-                        onDateTimeChanged: (newTime) => tempTime = newTime,
+                        onDateTimeChanged: (newTime) {
+                          HapticFeedback.selectionClick(); 
+                          tempTime = newTime;
+                        },
                       ),
                     ),
                   ),
@@ -119,7 +123,6 @@ class _ItemDetailSheetState extends State<ItemDetailSheet> {
 
                 const SizedBox(height: 24),
 
-                // Кнопка підтвердження
                 SizedBox(
                   width: double.infinity,
                   height: 50,

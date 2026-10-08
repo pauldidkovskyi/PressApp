@@ -89,7 +89,7 @@ class _CalendarSheetState extends State<CalendarSheet> {
                 '${_months[_displayedMonth.month]} ${_displayedMonth.year}',
                 style: TextStyle(
                   color: isCurrentMonth
-                      ? const Color(0xFF0A84FF) //0xFF0A84FF red 0xFFFF453A
+                      ? const Color(0xFF0A84FF) //blue - 0xFF0A84FF red - 0xFFFF453A
                       : Colors.white,
                   fontSize: 28,
                   fontWeight: FontWeight.w700,

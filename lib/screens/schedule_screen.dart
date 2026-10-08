@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../models/schedule_item.dart';
@@ -27,10 +28,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   @override
   void initState() {
     super.initState();
-
     _allEvents = _eventsBox.values.toList();
     _allEvents.sort((a, b) => a.startTime.compareTo(b.startTime));
-
     _allTasks = _tasksBox.values.toList();
   }
 
@@ -44,6 +43,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     for (var t in _allTasks) {
       _tasksBox.put(t.id, t);
     }
+
     NotificationService().syncNotifications(_allEvents, _allTasks);
   }
 
@@ -187,7 +187,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 behavior: HitTestBehavior.opaque,
                 onHorizontalDragEnd: (details) {
                   if (details.primaryVelocity == null) return;
-
                   if (details.primaryVelocity! < -300) {
                     setState(
                       () => _selectedDate = _selectedDate.add(
@@ -322,13 +321,15 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               ),
             ),
           ),
-
         ...events.map(
           (event) => EventCard(
             key: ValueKey(event.id),
             item: event,
             onToggle: () {
-              setState(() => event.isCompleted = !event.isCompleted);
+              HapticFeedback.lightImpact();
+              setState(() {
+                event.isCompleted = !event.isCompleted;
+              });
               _saveData();
             },
             onTap: () {
@@ -356,7 +357,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             },
           ),
         ),
-
         if (tasks.isNotEmpty) ...[
           const SizedBox(height: 24),
           const Text(
@@ -368,7 +368,6 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
             ),
           ),
           const SizedBox(height: 12),
-
           ReorderableListView(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -404,7 +403,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     key: ValueKey(task.id),
                     item: task,
                     onToggle: () {
-                      setState(() => task.isCompleted = !task.isCompleted);
+                      HapticFeedback.lightImpact();
+                      setState(() {
+                        task.isCompleted = !task.isCompleted;
+                      });
                       _saveData();
                     },
                     onTap: () {
